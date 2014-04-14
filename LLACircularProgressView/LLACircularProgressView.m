@@ -11,6 +11,9 @@
 #import <Availability.h>
 
 @interface LLACircularProgressView ()
+{
+    BOOL _downloading;
+}
 
 @property (nonatomic, strong) CAShapeLayer *progressLayer;
 
@@ -35,6 +38,8 @@
 }
 
 - (void)initialize {
+    _downloading = NO;
+    
     self.contentMode = UIViewContentModeRedraw;
     self.backgroundColor = [UIColor whiteColor];
 
@@ -59,16 +64,61 @@
 - (void)drawRect:(CGRect)rect {
     CGContextRef ctx = UIGraphicsGetCurrentContext();
 
-    CGContextSetFillColorWithColor(ctx, self.progressTintColor.CGColor);
-    CGContextSetStrokeColorWithColor(ctx, self.progressTintColor.CGColor);
-    CGContextStrokeEllipseInRect(ctx, CGRectInset(self.bounds, 1, 1));
-    
-    CGRect stopRect;
-    stopRect.origin.x = CGRectGetMidX(self.bounds) - self.bounds.size.width / 8;
-    stopRect.origin.y = CGRectGetMidY(self.bounds) - self.bounds.size.height / 8;
-    stopRect.size.width = self.bounds.size.width / 4;
-    stopRect.size.height = self.bounds.size.height / 4;
-    CGContextFillRect(ctx, CGRectIntegral(stopRect));
+    if (!_downloading) {
+        //Draw Clound Down
+        CGContextSetFillColorWithColor(ctx, self.progressTintColor.CGColor);
+        CGContextSetStrokeColorWithColor(ctx, self.progressTintColor.CGColor);
+        CGContextStrokeEllipseInRect(ctx, CGRectInset(self.bounds, 1, 1));
+        
+        CGPoint origin = CGPointMake(CGRectGetMidX(self.bounds), CGRectGetMidY(self.bounds) + self.bounds.size.height / 4);
+        CGFloat offsetValue = 8;
+        
+        UIBezierPath *path = [UIBezierPath bezierPath];
+        /*
+        [path moveToPoint:origin];
+        [path addLineToPoint:CGPointMake(origin.x + 2, origin.y + 2)];
+        */
+        //Gambo
+        [path moveToPoint:CGPointMake(origin.x, origin.y)];
+        [path addLineToPoint:CGPointMake(origin.x, origin.y - self.bounds.size.height / 2)];
+        
+        // Upper tip
+        [path moveToPoint:CGPointMake(origin.x - offsetValue, origin.y - offsetValue / 1.5)];
+        
+        // Arrow head
+        [path addLineToPoint:CGPointMake(origin.x, origin.y)];
+        
+        // Lower tip
+        [path addLineToPoint:CGPointMake(origin.x + offsetValue, origin.y - offsetValue / 1.5)];
+        
+        [path moveToPoint:CGPointMake(origin.x, origin.y)];
+        
+        [path setLineWidth:1];
+        [path stroke];
+        
+    }else{
+        //Draw Circular progress
+        CGContextSetFillColorWithColor(ctx, self.progressTintColor.CGColor);
+        CGContextSetStrokeColorWithColor(ctx, self.progressTintColor.CGColor);
+        CGContextStrokeEllipseInRect(ctx, CGRectInset(self.bounds, 1, 1));
+        
+        CGRect stopRect;
+        stopRect.origin.x = CGRectGetMidX(self.bounds) - self.bounds.size.width / 8;
+        stopRect.origin.y = CGRectGetMidY(self.bounds) - self.bounds.size.height / 8;
+        stopRect.size.width = self.bounds.size.width / 4;
+        stopRect.size.height = self.bounds.size.height / 4;
+        CGContextFillRect(ctx, CGRectIntegral(stopRect));
+    }
+}
+
+#pragma mark - Touch Tracking
+
+- (void)endTrackingWithTouch:(UITouch *)touch withEvent:(UIEvent *)event
+{
+    if (event.type == UIEventTypeTouches) {
+        _downloading = !_downloading;
+        [self setNeedsDisplay];
+    }
 }
 
 #pragma mark - Accessors
@@ -97,6 +147,9 @@
         [self.progressLayer removeAnimationForKey:@"animation"];
     }
     
+    if (_progress == 0) {
+        _downloading = YES;
+    }
     _progress = progress;
 }
 
